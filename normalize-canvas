@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# Takes all .jpg/.pngs in the current directory and creates a padded version in the output directory so they are all the same size (width x height) without impacting the resolution (art stays the same)
+
+# Check if ImageMagick is installed
+if ! command -v convert &> /dev/null; then
+    echo "Error: ImageMagick is not installed"
+    echo "To install ImageMagick, follow the instructions for your system:"
+    echo "  - On Debian/Ubuntu: sudo apt-get install imagemagick"
+    echo "  - On CentOS/RHEL: sudo yum install imagemagick"
+    echo "  - On macOS: brew install imagemagick"
+    exit 1
+fi
+
+# Check if output directory was provided
+if [ -z "$1" ]; then
+    echo "Error: No output directory provided"
+    exit 1
+fi
+
+# Create output directory if it doesn't already exist
+mkdir -p "$1"
+
+# Find the largest width and height of all images in the directory
+max_width=$(identify -format "%[fx:w]\n" $(find . -maxdepth 1 -name '*.jpg' -o -name '*.png') | sort -rn | head -1)
+max_height=$(identify -format "%[fx:h]\n" $(find . -maxdepth 1 -name '*.jpg' -o -name '*.png') | sort -rn | head -1)
+
+# Resize the canvas of each image in the directory to match the largest dimensions, centering the image
+for file in $(find . -maxdepth 1 -name '*.jpg' -o -name '*.png'); do
+    convert "$file" -background none -gravity center -extent "${max_width}x${max_height}" "$1/$file"
+done
